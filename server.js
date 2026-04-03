@@ -17,20 +17,21 @@ app.post('/api/chat', async (req, res) => {
     console.log("--- Naya Message Aaya ---");
     console.log("User:", userMessage);
 
-    const API_KEY = process.env.GEMINI_API_KEY; 
+    // .trim() lagaya hai taaki agar key copy karte waqt koi space aa gaya ho toh wo hat jaye
+    const API_KEY = (process.env.GEMINI_API_KEY || "").trim(); 
     
-    // 👇👇 Nayi Key ke liye sabse Fast aur Naya Model (1.5-flash) 👇👇
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    // 👇 OFFICIAL STABLE V1 ENDPOINT (Yahan model pakka milega) 👇
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                // Brahmastra Hack (Kyunki isme error aata hi nahi hai)
+                // Yahan koi extra field nahi hai, Google reject nahi kar sakta
                 contents: [{ 
                     parts: [{ 
-                        text: `System Instruction (Follow strictly): ${personaInstruction}\n\nUser Message: ${userMessage}` 
+                        text: `Persona: ${personaInstruction}\n\nUser: ${userMessage}` 
                     }] 
                 }]
             })
@@ -47,7 +48,7 @@ app.post('/api/chat', async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Backend Catch Error:", error);
+        console.error("Backend Error:", error);
         res.status(500).json({ error: "Server error" });
     }
 });
