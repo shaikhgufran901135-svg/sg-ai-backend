@@ -5,7 +5,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health-check (Server ko jagaye rakhne ke liye)
+// Server ko jagaye rakhne ka rasta
 app.get('/', (req, res) => {
     res.status(200).send("Server is awake and running!");
 });
@@ -27,9 +27,13 @@ app.post('/api/chat', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                // 👇👇 FIXED: Google v1 expects system_instruction (with underscore)
-                system_instruction: { parts: [{ text: personaInstruction }] },
-                contents: [{ parts: [{ text: userMessage }] }]
+                // 👇👇 BRAHMASTRA: Humne dono messages ko ek sath jod diya! 👇👇
+                contents: [{ 
+                    parts: [{ 
+                        text: `System Instruction (Follow this strictly): ${personaInstruction}\n\nUser Message: ${userMessage}` 
+                    }] 
+                }]
+                // 👆👆 Ab Google ko koi error nikalne ka mauka hi nahi milega! 👆👆
             })
         });
 
@@ -37,7 +41,7 @@ app.post('/api/chat', async (req, res) => {
 
         if (data.error) {
             console.error("Google API Error:", data.error.message);
-            res.status(400).json(data); // Google ka asli error frontend ko bhejo check karne ke liye
+            res.status(400).json(data);
         } else {
             console.log("AI ka Jawab: Success! ✅");
             res.json(data);
