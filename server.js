@@ -19,7 +19,7 @@ app.post('/api/chat', async (req, res) => {
 
     const API_KEY = process.env.GEMINI_API_KEY; 
     
-    // MODEL & VERSION UPDATE: v1beta ki jagah 'v1' use kar rahe hain jo zyada stable hai
+    // Stable v1 API link
     const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     try {
@@ -27,7 +27,8 @@ app.post('/api/chat', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                systemInstruction: { parts: [{ text: personaInstruction }] },
+                // 👇👇 FIXED: Google v1 expects system_instruction (with underscore)
+                system_instruction: { parts: [{ text: personaInstruction }] },
                 contents: [{ parts: [{ text: userMessage }] }]
             })
         });
@@ -36,11 +37,11 @@ app.post('/api/chat', async (req, res) => {
 
         if (data.error) {
             console.error("Google API Error:", data.error.message);
+            res.status(400).json(data); // Google ka asli error frontend ko bhejo check karne ke liye
         } else {
             console.log("AI ka Jawab: Success! ✅");
+            res.json(data);
         }
-
-        res.json(data); 
 
     } catch (error) {
         console.error("Backend Catch Error:", error);
