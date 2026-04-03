@@ -19,21 +19,20 @@ app.post('/api/chat', async (req, res) => {
 
     const API_KEY = process.env.GEMINI_API_KEY; 
     
-    // Stable v1 API link
-    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    // 👇👇 YAHAN WAPAS v1beta KAR DIYA HAI (Kyunki model yahin milega) 👇👇
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                // 👇👇 BRAHMASTRA: Humne dono messages ko ek sath jod diya! 👇👇
+                // 👇👇 BRAHMASTRA HACK (Sirf ek hi box mein sab bhej diya) 👇👇
                 contents: [{ 
                     parts: [{ 
-                        text: `System Instruction (Follow this strictly): ${personaInstruction}\n\nUser Message: ${userMessage}` 
+                        text: `System Instruction (Follow strictly): ${personaInstruction}\n\nUser Message: ${userMessage}` 
                     }] 
                 }]
-                // 👆👆 Ab Google ko koi error nikalne ka mauka hi nahi milega! 👆👆
             })
         });
 
