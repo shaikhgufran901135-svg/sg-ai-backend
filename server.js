@@ -12,7 +12,10 @@ app.post('/api/chat', async (req, res) => {
 
     // API Key environment variables se aayegi (Taki koi chura na sake)
     const API_KEY = process.env.GEMINI_API_KEY; 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    
+    // 👇👇 YAHAN NAYA MODEL (1.5) UPDATE KIYA HAI 👇👇
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    // 👆👆 -------------------------------------- 👆👆
 
     try {
         const response = await fetch(API_URL, {
@@ -33,12 +36,10 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// 👇👇 YAHAN NAYA CODE ADD KIYA HAI 👇👇
 // Server ko zinda rakhne ke liye ek simple health-check route
 app.get('/', (req, res) => {
     res.status(200).send("Server is awake and running!");
 });
-// 👆👆 NAYA CODE YAHAN KHATAM 👆👆
 
 // Port set karna cloud ke liye
 const PORT = process.env.PORT || 3000;
