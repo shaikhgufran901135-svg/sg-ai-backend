@@ -19,15 +19,15 @@ app.post('/api/chat', async (req, res) => {
 
     const API_KEY = process.env.GEMINI_API_KEY; 
     
-    // 👇👇 YAHAN '-latest' LAGA DIYA HAI TAAKI GOOGLE CONFUSE NA HO 👇👇
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+    // 👇👇 PLAN B: Dheeth aur Sabse Stable Model -> gemini-pro 👇👇
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                // Brahmastra Hack
+                // Brahmastra Hack (No confusing fields for Google)
                 contents: [{ 
                     parts: [{ 
                         text: `System Instruction (Follow strictly): ${personaInstruction}\n\nUser Message: ${userMessage}` 
