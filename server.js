@@ -33,6 +33,13 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// 👇👇 YAHAN NAYA CODE ADD KIYA HAI 👇👇
+// Server ko zinda rakhne ke liye ek simple health-check route
+app.get('/', (req, res) => {
+    res.status(200).send("Server is awake and running!");
+});
+// 👆👆 NAYA CODE YAHAN KHATAM 👆👆
+
 // Port set karna cloud ke liye
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
