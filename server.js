@@ -23,7 +23,7 @@ app.post('/api/chat', async (req, res) => {
                 'Content-Type': 'application/json' 
             },
             body: JSON.stringify({
-                model: "llama3-8b-8192", // Groq ka superfast model
+                model: "llama-3.1-8b-instant", // Groq ka superfast model
                 messages: [
                     {
                         // Aapki Persona/System Instruction
