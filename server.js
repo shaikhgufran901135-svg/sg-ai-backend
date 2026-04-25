@@ -15,6 +15,17 @@ app.post('/api/chat', async (req, res) => {
     const API_KEY = process.env.GROQ_API_KEY; 
     const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
 
+    // 🚀 NAYA LOGIC: Model Routing (Automatic switch)
+    let aiModel = "llama-3.1-8b-instant"; // Default chhota aur fast model
+
+    // Agar persona mein coding ya teacher ka zikr hai, toh bada model select karo
+    if (personaInstruction && (personaInstruction.includes("coding expert") || personaInstruction.includes("patient teacher"))) {
+        aiModel = "llama-3.3-70b-versatile"; // Smart model for complex tasks
+        console.log("🔥 Smart Model (70B) Activated!");
+    } else {
+        console.log("⚡ Fast Model (8B) Activated!");
+    }
+
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -23,7 +34,7 @@ app.post('/api/chat', async (req, res) => {
                 'Content-Type': 'application/json' 
             },
             body: JSON.stringify({
-                model: "llama-3.1-8b-instant", // Groq ka superfast model
+                model: aiModel, // Yahan ab dynamic variable pass hoga
                 messages: [
                     {
                         // Aapki Persona/System Instruction
