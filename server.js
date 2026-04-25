@@ -23,10 +23,10 @@ app.post('/api/chat', async (req, res) => {
         aiModel = "llama-3.3-70b-versatile"; // 2nd Model: Smart model for complex tasks
         console.log("🔥 Smart Llama Model (70B) Activated for Coding/Teaching!");
         
-    // Agar persona mein shayari ya poetic AI ka zikr hai, toh Qwen model select karo
+    // Agar persona mein shayari ya poetic AI ka zikr hai, toh OpenAI model select karo
     } else if (personaInstruction && (personaInstruction.includes("poetic AI") || personaInstruction.includes("Shayari"))) {
-        aiModel = "qwen/qwen3-32b"; // 3rd Model: Qwen model for Hindi/Urdu Shayari
-        console.log("✨ Qwen Model (32B) Activated for Shayari!");
+        aiModel = "openai/gpt-oss-120b"; // 3rd Model: Premium OpenAI 120B model for Shayari
+        console.log("✨ Premium OpenAI 120B Activated for Shayari!");
         
     // Baaki sabhi mode (General, Friendly, Funny, Motivator) ke liye fast model
     } else {
