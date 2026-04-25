@@ -15,15 +15,22 @@ app.post('/api/chat', async (req, res) => {
     const API_KEY = process.env.GROQ_API_KEY; 
     const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
 
-    // 🚀 NAYA LOGIC: Model Routing (Automatic switch)
-    let aiModel = "llama-3.1-8b-instant"; // Default chhota aur fast model
+    // 🚀 NAYA LOGIC: 3 Models Routing (Automatic switch)
+    let aiModel = "llama-3.1-8b-instant"; // 1st Model: Default chhota aur fast model
 
-    // Agar persona mein coding ya teacher ka zikr hai, toh bada model select karo
+    // Agar persona mein coding ya teacher ka zikr hai, toh bada Llama model select karo
     if (personaInstruction && (personaInstruction.includes("coding expert") || personaInstruction.includes("patient teacher"))) {
-        aiModel = "llama-3.3-70b-versatile"; // Smart model for complex tasks
-        console.log("🔥 Smart Model (70B) Activated!");
+        aiModel = "llama-3.3-70b-versatile"; // 2nd Model: Smart model for complex tasks
+        console.log("🔥 Smart Llama Model (70B) Activated for Coding/Teaching!");
+        
+    // Agar persona mein shayari ya poetic AI ka zikr hai, toh Qwen model select karo
+    } else if (personaInstruction && (personaInstruction.includes("poetic AI") || personaInstruction.includes("Shayari"))) {
+        aiModel = "qwen/qwen3-32b"; // 3rd Model: Qwen model for Hindi/Urdu Shayari
+        console.log("✨ Qwen Model (32B) Activated for Shayari!");
+        
+    // Baaki sabhi mode (General, Friendly, Funny, Motivator) ke liye fast model
     } else {
-        console.log("⚡ Fast Model (8B) Activated!");
+        console.log("⚡ Fast Llama Model (8B) Activated for Normal/Friendly Chat!");
     }
 
     try {
