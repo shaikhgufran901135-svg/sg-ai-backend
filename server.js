@@ -5,11 +5,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🚀 CRON-JOB PING ROUTE: Ye add kiya hai server ko jagane ke liye
-app.get('/ping', (req, res) => {
-    res.status(200).send('SGChat Backend is Awake! 🚀');
-});
-
 // Jab frontend se message aayega
 app.post('/api/chat', async (req, res) => {
     const userMessage = req.body.message;
