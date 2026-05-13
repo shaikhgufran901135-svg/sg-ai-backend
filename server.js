@@ -9,6 +9,7 @@ app.use(express.json());
 app.post('/api/chat', async (req, res) => {
     const userMessage = req.body.message;
     const personaInstruction = req.body.persona;
+    const chatHistory = req.body.history || []; // 🚀 Frontend se bheji hui history yahan aayegi
 
     // API Key environment variables se aayegi (Taki koi chura na sake)
     // DHYAN DEIN: Render par variable ka naam GROQ_API_KEY rakhna hai
@@ -33,6 +34,33 @@ app.post('/api/chat', async (req, res) => {
         console.log("⚡ Fast Llama Model (8B) Activated for Normal/Friendly Chat!");
     }
 
+    // 🚀 FIX: History Mapping - Gemini format se Groq format me convert kar rahe hain
+    let formattedMessages = [
+        {
+            // Aapki Persona/System Instruction
+            role: "system",
+            content: personaInstruction || "You are a helpful AI assistant."
+        }
+    ];
+
+    if (chatHistory.length > 0) {
+        // Agar pehle se baat chal rahi hai, toh saari purani history add karo
+        chatHistory.forEach(msg => {
+            // Frontend 'model' use karta hai, Groq usko 'assistant' samajhta hai
+            const mappedRole = msg.role === "model" ? "assistant" : "user";
+            formattedMessages.push({
+                role: mappedRole,
+                content: msg.parts[0].text
+            });
+        });
+    } else {
+        // Agar history khali hai, toh bas naya message add kar do (Failsafe)
+        formattedMessages.push({
+            role: "user",
+            content: userMessage
+        });
+    }
+
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -41,19 +69,8 @@ app.post('/api/chat', async (req, res) => {
                 'Content-Type': 'application/json' 
             },
             body: JSON.stringify({
-                model: aiModel, // Yahan ab dynamic variable pass hoga
-                messages: [
-                    {
-                        // Aapki Persona/System Instruction
-                        role: "system",
-                        content: personaInstruction || "You are a helpful AI assistant."
-                    },
-                    {
-                        // User ka bheja hua sawal
-                        role: "user",
-                        content: userMessage
-                    }
-                ]
+                model: aiModel, 
+                messages: formattedMessages // 🚀 Yahan ab naye message ke sath PURI history pass hogi!
             })
         });
 
