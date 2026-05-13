@@ -16,22 +16,27 @@ app.post('/api/chat', async (req, res) => {
     const API_KEY = process.env.GROQ_API_KEY; 
     const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
 
-    // 🚀 NAYA LOGIC: 3 Models Routing (Automatic switch)
-    let aiModel = "llama-3.1-8b-instant"; // 1st Model: Default chhota aur fast model
+    // 🚀 NAYA LOGIC: Models Routing (Tumhari requirement ke hisaab se)
+    let aiModel = "llama-3.1-8b-instant"; // Default fast model (General, Bestie, Motivator)
 
-    // Agar persona mein coding ya teacher ka zikr hai, toh bada Llama model select karo
-    if (personaInstruction && (personaInstruction.includes("coding expert") || personaInstruction.includes("patient teacher"))) {
-        aiModel = "llama-3.3-70b-versatile"; // 2nd Model: Smart model for complex tasks
-        console.log("🔥 Smart Llama Model (70B) Activated for Coding/Teaching!");
+    // 1. Agar persona mein SIRF coding (expert programmer) ka zikr hai, toh Llama 4 Scout lagao
+    if (personaInstruction && personaInstruction.includes("expert programmer")) {
+        aiModel = "meta-llama/llama-4-scout-17b-16e-instruct"; 
+        console.log("🔥 Llama 4 Scout Activated for Code Helper!");
         
-    // Agar persona mein shayari ya poetic AI ka zikr hai, toh OpenAI model select karo
+    // 2. Agar persona mein Teacher ya Funny Bot ka zikr hai, toh 70B Versatile lagao
+    } else if (personaInstruction && (personaInstruction.includes("encouraging teacher") || personaInstruction.includes("stand-up comedian"))) {
+        aiModel = "llama-3.3-70b-versatile"; 
+        console.log("🧠 Smart Llama 70B Activated for Teacher & Funny Bot!");
+
+    // 3. Agar persona mein shayari ya poetic AI ka zikr hai, toh OpenAI model select karo
     } else if (personaInstruction && (personaInstruction.includes("poetic AI") || personaInstruction.includes("Shayari"))) {
-        aiModel = "openai/gpt-oss-120b"; // 3rd Model: Premium OpenAI 120B model for Shayari
+        aiModel = "openai/gpt-oss-120b"; 
         console.log("✨ Premium OpenAI 120B Activated for Shayari!");
         
-    // Baaki sabhi mode (General, Friendly, Funny, Motivator) ke liye fast model
+    // 4. Baaki sabhi mode ke liye default fast model chalega
     } else {
-        console.log("⚡ Fast Llama Model (8B) Activated for Normal/Friendly Chat!");
+        console.log("⚡ Fast Llama Model (8B) Activated for Normal Chat!");
     }
 
     // 🚀 FIX: History Mapping - Gemini format se Groq format me convert kar rahe hain
