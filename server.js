@@ -14,71 +14,9 @@ app.post('/api/chat', async (req, res) => {
     // API Key environment variables se aayegi (Taki koi chura na sake)
     // DHYAN DEIN: Render par variable ka naam GROQ_API_KEY rakhna hai
     const API_KEY = process.env.GROQ_API_KEY; 
-
-    // ==========================================
-    // 🚀 NEW: AUDIO GENERATION LOGIC (Groq TTS)
-    // ==========================================
-    // Agar Persona 'audio-gen' ya 'Voice Maker' type ka hai, toh Groq ke Audio model ko call lagao
-    if (personaInstruction && (personaInstruction.includes("audio-gen") || personaInstruction.includes("Text to Voice") || personaInstruction.includes("Voice Maker"))) {
-        console.log("🎙️ Audio Generation Requested using Groq Orpheus!");
-
-        const AUDIO_API_URL = `https://api.groq.com/openai/v1/audio/speech`;
-
-        try {
-            // Note: History skip karke sirf current message bhej rahe hain taaki pure conversation ka audio na banne lag jaye
-            const response = await fetch(AUDIO_API_URL, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ 
-                    model: "canopylabs/orpheus-v1-english",
-                    input: userMessage, // Jo text user ne type kiya
-                    voice: "hannah", // Options: autumn, diana, hannah, austin, daniel, troy (Tum ise change bhi kar sakte ho)
-                    response_format: "wav"
-                }),
-            });
-
-            if (!response.ok) {
-                const errData = await response.text();
-                throw new Error(`Groq Audio API Error: ${errData}`);
-            }
-
-            // Audio binary file ki tarah aayega (ArrayBuffer)
-            const arrayBuffer = await response.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            
-            // Binary audio ko Base64 String mein convert kar rahe hain taaki HTML mein bhej sakein
-            const base64Audio = buffer.toString('base64');
-            const audioSrc = `data:audio/wav;base64,${base64Audio}`;
-
-            // HTML ka Audio player direct banakar bhej denge, frontend apne aap render kar lega
-            const finalReply = `🎵 Your audio is ready!<br><br><audio controls src="${audioSrc}" style="width: 100%; border-radius: 10px; margin-top: 10px;"></audio>`;
-
-            // Gemini ke fake format mein wrap karke bhej do
-            const fakeGeminiFormat = {
-                candidates: [
-                    { content: { parts: [{ text: finalReply }] } }
-                ]
-            };
-
-            return res.json(fakeGeminiFormat);
-
-        } catch (error) {
-            console.error("Audio Generation Error:", error);
-            return res.status(500).json({ error: "Audio generate karne mein error aaya." });
-        }
-    }
-
-
-    // ==========================================
-    // 🚀 EXISTING TEXT CHAT LOGIC (Groq Text API)
-    // ==========================================
-    
     const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
 
-    // 🚀 Models Routing (Tumhari requirement ke hisaab se)
+    // 🚀 NAYA LOGIC: Models Routing (Tumhari requirement ke hisaab se)
     let aiModel = "llama-3.1-8b-instant"; // Default fast model (General, Bestie, Motivator)
 
     // 1. Agar persona mein SIRF coding (expert programmer) ka zikr hai, toh Llama 4 Scout lagao
@@ -144,6 +82,7 @@ app.post('/api/chat', async (req, res) => {
         const data = await response.json();
 
         // 🪄 MAGIC TRICK: Groq ke jawab ko Gemini ke format mein convert kar rahe hain
+        // Taaki Android Studio ka code badalna na pade!
         if (data.choices && data.choices.length > 0) {
             const aiReply = data.choices[0].message.content;
             
