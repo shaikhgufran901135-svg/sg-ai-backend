@@ -14,9 +14,71 @@ app.post('/api/chat', async (req, res) => {
     // API Key environment variables se aayegi (Taki koi chura na sake)
     // DHYAN DEIN: Render par variable ka naam GROQ_API_KEY rakhna hai
     const API_KEY = process.env.GROQ_API_KEY; 
+
+    // ==========================================
+    // 🚀 NAYA LOGIC: AUDIO GENERATION (Groq TTS)
+    // ==========================================
+    // Check kar rahe hain ki agar persona "Text to Voice" hai toh audio API hit karo
+    if (personaInstruction === "Text to Voice") {
+        console.log("🎙️ Groq Audio Generation Requested!");
+        
+        const AUDIO_API_URL = `https://api.groq.com/openai/v1/audio/speech`;
+
+        try {
+            const response = await fetch(AUDIO_API_URL, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({
+                    model: "canopylabs/orpheus-v1-english", // Tumhara required model
+                    input: userMessage, // Jo user ne likha hai
+                    voice: "alloy", // Voice option (Tum ise Groq documentation ke hisaab se badal sakte ho)
+                    response_format: "wav" // Output format
+                })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Groq Audio API Error: ${errText}`);
+            }
+
+            // Audio ko binary format se Base64 string mein convert karna taaki HTML mein directly embed ho sake
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const base64Audio = buffer.toString('base64');
+            const audioSrc = `data:audio/wav;base64,${base64Audio}`;
+
+            // HTML ka mast sa Audio Player banakar bhej denge
+            const finalReply = `🎵 Your audio is ready!<br><br><audio controls src="${audioSrc}" style="width: 100%; border-radius: 10px; margin-top: 10px;"></audio>`;
+
+            // Frontend ko wapas usi Gemini format mein bhej do
+            const fakeGeminiFormat = {
+                candidates: [
+                    {
+                        content: {
+                            parts: [{ text: finalReply }]
+                        }
+                    }
+                ]
+            };
+
+            return res.json(fakeGeminiFormat); // Yahan se seedha wapas chale jayenge, neeche ka text chat run nahi hoga
+
+        } catch (error) {
+            console.error("Audio Generation Error:", error);
+            return res.status(500).json({ error: "Audio generate karne mein error aaya." });
+        }
+    }
+
+
+    // ==========================================
+    // 🚀 PURANA LOGIC: TEXT CHAT (Groq LLMs)
+    // ==========================================
     const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
 
-    // 🚀 NAYA LOGIC: Models Routing (Tumhari requirement ke hisaab se)
+    // 🚀 Models Routing (Tumhari requirement ke hisaab se)
     let aiModel = "llama-3.1-8b-instant"; // Default fast model (General, Bestie, Motivator)
 
     // 1. Agar persona mein SIRF coding (expert programmer) ka zikr hai, toh Llama 4 Scout lagao
