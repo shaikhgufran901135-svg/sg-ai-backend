@@ -34,7 +34,7 @@ app.post('/api/chat', async (req, res) => {
                 body: JSON.stringify({
                     model: "canopylabs/orpheus-v1-english", // Tumhara required model
                     input: userMessage, // Jo user ne likha hai
-                    voice: "alloy", // Voice option (Tum ise Groq documentation ke hisaab se badal sakte ho)
+                    voice: "hannah", // ✅ FIX: "alloy" hata kar allowed voice "hannah" daal di!
                     response_format: "wav" // Output format
                 })
             });
