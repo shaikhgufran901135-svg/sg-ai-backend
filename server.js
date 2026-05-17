@@ -160,7 +160,8 @@ app.post('/api/generate-image', async (req, res) => {
     console.log(`🎨 Image Gen Request: ${message}`);
 
     try {
-        const response = await hfFetchWithRetry("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", {
+        // 🔥 FIX: Naya aur zinda image model
+        const response = await hfFetchWithRetry("https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5", {
             method: "POST",
             headers: { 
                 "Authorization": `Bearer ${HF_TOKEN}`, 
@@ -190,7 +191,8 @@ app.post('/api/generate-video', async (req, res) => {
     console.log(`🎥 Video Gen Request: ${message}`);
 
     try {
-        const response = await hfFetchWithRetry("https://api-inference.huggingface.co/models/cerspense/zeroscope_v2_576w", {
+        // 🔥 FIX: Naya aur zinda video model
+        const response = await hfFetchWithRetry("https://api-inference.huggingface.co/models/damo-vilab/text-to-video-ms-1.7b", {
             method: "POST",
             headers: { 
                 "Authorization": `Bearer ${HF_TOKEN}`, 
