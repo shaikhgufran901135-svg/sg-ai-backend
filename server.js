@@ -156,25 +156,17 @@ app.post('/api/generate-image', async (req, res) => {
 });
 
 
-// ✅ 2.2 - AI Video Generator (⚠️ DUMMY FALLBACK - Premium Popup Logic)
+// ✅ 2.2 - AI Video Generator (⚠️ PREMIUM POPUP LOGIC - Backend Message)
 app.post('/api/generate-video', async (req, res) => {
     const { message } = req.body;
 
-    console.log(`🎥 Video Gen Request: ${message}`);
+    console.log(`🎥 Video Gen Request Blocked: ${message}`);
 
-    try {
-        // App ko thoda "loading" feel dene ke liye 3 second wait karenge
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Tumhara frontend <video src="mediaUrl"> dhoondhta hai, isliye hum ek sample stock video bhej rahe hain
-        // Taki frontend crash na ho aur error message na aaye
-        const dummyVideoUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
-
-        res.json({ success: true, mediaUrl: dummyVideoUrl });
-    } catch (error) {
-        console.error("Video Gen Error:", error.message);
-        res.status(500).json({ success: false, error: "Video generation failed or timed out." });
-    }
+    // 🔥 Ye line direct tumhare frontend ko ek "Error" treat hogi aur ye custom message screen pe dikhega
+    res.status(400).json({ 
+        success: false, 
+        error: "🎥 AI Video Generation is a Premium Feature and will be available soon!" 
+    });
 });
 
 
