@@ -7,7 +7,32 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 
 // ==========================================
-// 🚀 1. PURANA LOGIC: MAIN CHAT SYSTEM (Do Not Touch)
+// 🛠️ SMART RETRY LOGIC FOR HUGGING FACE 
+// ==========================================
+async function hfFetchWithRetry(url, options, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        const response = await fetch(url, options);
+        
+        if (response.ok) {
+            return response; 
+        }
+
+        const errorData = await response.json().catch(() => ({}));
+        console.log(`[HF API] Attempt ${i + 1} Failed:`, errorData.error || response.statusText);
+
+        if (response.status === 503 && i < maxRetries - 1) {
+            const waitTime = (errorData.estimated_time || 15) * 1000; 
+            console.log(`[HF API] Model is sleeping 😴. Waiting for ${Math.round(waitTime/1000)} seconds before trying again...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+            throw new Error(errorData.error || `Hugging Face API Error: ${response.status}`);
+        }
+    }
+}
+
+
+// ==========================================
+// 🚀 1. PURANA LOGIC: MAIN CHAT SYSTEM
 // ==========================================
 app.post('/api/chat', async (req, res) => {
     const userMessage = req.body.message;
@@ -16,7 +41,7 @@ app.post('/api/chat', async (req, res) => {
 
     const API_KEY = process.env.GROQ_API_KEY; 
 
-    // Groq Audio (Old Chat based)
+    // Groq Audio (Old Chat based fallback)
     if (personaInstruction === "Text to Voice") {
         console.log("🎙️ Groq Audio Generation Requested (From Chat)!");
         const AUDIO_API_URL = `https://api.groq.com/openai/v1/audio/speech`;
@@ -124,18 +149,18 @@ app.post('/api/chat', async (req, res) => {
 
 
 // ==========================================
-// 🚀 2. NAYA LOGIC: HUGGING FACE TOOLS API
+// 🚀 2. TOOLS API (IMAGE, VIDEO, AUDIO, SUMMARY)
 // ==========================================
 
-// ✅ 2.1 - AI Image Generator
+// ✅ 2.1 - AI Image Generator (Hugging Face with Retry)
 app.post('/api/generate-image', async (req, res) => {
     const { message } = req.body;
-    const HF_TOKEN = process.env.HF_TOKEN; // Render me HF_TOKEN add karna mat bhoolna!
+    const HF_TOKEN = process.env.HF_TOKEN; 
 
     console.log(`🎨 Image Gen Request: ${message}`);
 
     try {
-        const response = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", {
+        const response = await hfFetchWithRetry("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", {
             method: "POST",
             headers: { 
                 "Authorization": `Bearer ${HF_TOKEN}`, 
@@ -143,8 +168,6 @@ app.post('/api/generate-image', async (req, res) => {
             },
             body: JSON.stringify({ inputs: message }),
         });
-
-        if (!response.ok) throw new Error("Hugging Face API se image nahi ban payi.");
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -153,13 +176,13 @@ app.post('/api/generate-image', async (req, res) => {
 
         res.json({ success: true, mediaUrl: mediaUrl });
     } catch (error) {
-        console.error("Image Gen Error:", error);
+        console.error("Image Gen Error:", error.message);
         res.status(500).json({ success: false, error: "Image generation failed." });
     }
 });
 
 
-// ✅ 2.2 - AI Video Generator (2 Tokens wala model)
+// ✅ 2.2 - AI Video Generator (Hugging Face with Retry)
 app.post('/api/generate-video', async (req, res) => {
     const { message } = req.body;
     const HF_TOKEN = process.env.HF_TOKEN;
@@ -167,7 +190,7 @@ app.post('/api/generate-video', async (req, res) => {
     console.log(`🎥 Video Gen Request: ${message}`);
 
     try {
-        const response = await fetch("https://api-inference.huggingface.co/models/cerspense/zeroscope_v2_576w", {
+        const response = await hfFetchWithRetry("https://api-inference.huggingface.co/models/cerspense/zeroscope_v2_576w", {
             method: "POST",
             headers: { 
                 "Authorization": `Bearer ${HF_TOKEN}`, 
@@ -175,8 +198,6 @@ app.post('/api/generate-video', async (req, res) => {
             },
             body: JSON.stringify({ inputs: message }),
         });
-
-        if (!response.ok) throw new Error("Hugging Face API se video nahi ban paya (Server overload ho sakta hai).");
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -185,34 +206,40 @@ app.post('/api/generate-video', async (req, res) => {
 
         res.json({ success: true, mediaUrl: mediaUrl });
     } catch (error) {
-        console.error("Video Gen Error:", error);
+        console.error("Video Gen Error:", error.message);
         res.status(500).json({ success: false, error: "Video generation failed or timed out." });
     }
 });
 
 
-// ✅ 2.3 - AI Text to Voice (Smart Hindi/English routing)
+// ✅ 2.3 - AI Text to Voice (🔥 FAST GROQ MODEL IMPLEMENTED 🔥)
 app.post('/api/generate-audio', async (req, res) => {
     const { message } = req.body;
-    const HF_TOKEN = process.env.HF_TOKEN;
+    const API_KEY = process.env.GROQ_API_KEY; 
 
-    // 💡 Smart Detector: Check agar text me Hindi (Devanagari) font hai
-    const isHindi = /[\u0900-\u097F]/.test(message);
-    const hfModel = isHindi ? "facebook/mms-tts-hin" : "facebook/mms-tts-eng";
+    console.log(`🎙️ Audio Gen Request: ${message} (Using Groq: canopylabs/orpheus-v1-english)`);
 
-    console.log(`🎙️ Audio Gen Request: ${message} (Using model: ${hfModel})`);
+    const AUDIO_API_URL = `https://api.groq.com/openai/v1/audio/speech`;
 
     try {
-        const response = await fetch(`https://api-inference.huggingface.co/models/${hfModel}`, {
-            method: "POST",
+        const response = await fetch(AUDIO_API_URL, {
+            method: 'POST',
             headers: { 
-                "Authorization": `Bearer ${HF_TOKEN}`, 
-                "Content-Type": "application/json" 
+                'Authorization': `Bearer ${API_KEY}`,
+                'Content-Type': 'application/json' 
             },
-            body: JSON.stringify({ inputs: message }),
+            body: JSON.stringify({
+                model: "canopylabs/orpheus-v1-english",
+                input: message,
+                voice: "hannah",
+                response_format: "wav"
+            })
         });
 
-        if (!response.ok) throw new Error("Audio generation model abhi load ho raha hai.");
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Groq Audio API Error: ${errText}`);
+        }
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -221,7 +248,7 @@ app.post('/api/generate-audio', async (req, res) => {
 
         res.json({ success: true, mediaUrl: mediaUrl });
     } catch (error) {
-        console.error("Audio Gen Error:", error);
+        console.error("Audio Gen Error:", error.message);
         res.status(500).json({ success: false, error: "Audio generation failed." });
     }
 });
@@ -229,7 +256,7 @@ app.post('/api/generate-audio', async (req, res) => {
 
 // ✅ 2.4 - Video Summary (Using Groq text model)
 app.post('/api/video-summary', async (req, res) => {
-    const { message } = req.body; // Yahan URL ya text aayega
+    const { message } = req.body; 
     const API_KEY = process.env.GROQ_API_KEY; 
 
     console.log(`📺 Video Summary Request: ${message}`);
