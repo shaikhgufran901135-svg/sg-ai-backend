@@ -170,12 +170,16 @@ app.post('/api/generate-video', async (req, res) => {
 });
 
 
-// ✅ 2.3 - AI Text to Voice (🔥 FAST GROQ MODEL IMPLEMENTED 🔥)
+// ✅ 2.3 - AI Text to Voice (🔥 FAST GROQ MODEL WITH MALE/FEMALE OPTION 🔥)
 app.post('/api/generate-audio', async (req, res) => {
-    const { message } = req.body;
+    const { message, voiceType } = req.body;
     const API_KEY = process.env.GROQ_API_KEY; 
 
-    console.log(`🎙️ Audio Gen Request: ${message} (Using Groq: canopylabs/orpheus-v1-english)`);
+    // 🔥 NAYA: User ki choice ke hisaab se aawaz select karna
+    // Frontend se 'male' aayega toh "alloy" use hoga, warna default "hannah" (female)
+    const selectedVoice = (voiceType === 'male') ? "alloy" : "hannah";
+
+    console.log(`🎙️ Audio Gen Request: ${message} (Using Groq Voice: ${selectedVoice})`);
 
     const AUDIO_API_URL = `https://api.groq.com/openai/v1/audio/speech`;
 
@@ -189,7 +193,7 @@ app.post('/api/generate-audio', async (req, res) => {
             body: JSON.stringify({
                 model: "canopylabs/orpheus-v1-english",
                 input: message,
-                voice: "hannah",
+                voice: selectedVoice, // Yahan aawaz dynamic set kar di
                 response_format: "wav"
             })
         });
