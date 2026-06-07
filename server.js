@@ -200,65 +200,55 @@ app.post('/api/chat', async (req, res) => {
 // 🚀 2. TOOLS API (IMAGE, VIDEO, AUDIO, SUMMARY)
 // ==========================================
 
-// ✅ 2.1 - AI Image Generator (Imagen 3 + Gemini Prompt Enhancer)
+// ✅ 2.1 - AI Image Generator (Hugging Face FLUX.1 + Gemini Prompt Enhancer)
 app.post('/api/generate-image', async (req, res) => {
     const { message, image_data } = req.body;
     let finalPrompt = message || "A breathtaking beautiful futuristic artwork";
 
     try {
-        // 🧠 4. Smart Image-to-Image Logic (The Master Prompt)
+        // 🧠 Master Prompt: Smart Image-to-Image Logic Intact
         if (image_data) {
             console.log(`👁️ Gemini Vision Activated for Image Prompt Enhancement!`);
             
-            // Gemini se image ko analyze karke perfect Text-to-Image prompt banwane ka magic
             const geminiInstruction = `Analyze this uploaded image. The user wants to generate a new AI image based on it. User's specific instruction is: '${message || 'make it better'}'. Please write a highly detailed, descriptive image-generation prompt (in English) that can be fed into an AI generator to create this new image. ONLY output the prompt, no conversational text.`;
             
-            // Ye call ab automatically gemini-2.5-flash use karega kyunki helper function update ho gaya hai
             finalPrompt = await askGeminiVision(geminiInstruction, image_data);
             console.log(`✨ Enhanced Prompt by Gemini: ${finalPrompt}`);
         }
 
-        console.log(`🎨 Image Gen Request (Imagen 3): ${finalPrompt}`);
+        console.log(`🎨 Image Gen Request (FLUX.1): ${finalPrompt}`);
 
-        const apiKey = process.env.GEMINI_API_KEY; 
-        if (!apiKey) throw new Error("GEMINI_API_KEY is missing in backend.");
+        // 🔑 Token Authentication
+        const hfToken = process.env.HF_TOKEN; 
+        if (!hfToken) throw new Error("HF_TOKEN is missing in backend.");
 
-        // 🎨 3. Google Nano Banana (Imagen 3) Integration
-        const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
+        // 🚀 Hugging Face FLUX.1 API Integration
+        const hfUrl = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell";
 
-        const imagenPayload = {
-            instances: [
-                { prompt: finalPrompt }
-            ],
-            parameters: {
-                sampleCount: 1,
-                aspectRatio: "1:1" // Ise aap apne UI ke hisaab se "16:9", "9:16" bhi kar sakte hain
-            }
-        };
-
-        const response = await fetch(imagenUrl, {
+        const response = await fetch(hfUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(imagenPayload)
+            headers: { 
+                'Authorization': `Bearer ${hfToken}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ inputs: finalPrompt })
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            console.error("Imagen API Error:", JSON.stringify(data, null, 2));
-            throw new Error(data.error?.message || "Imagen API fail ho gayi.");
+            const errText = await response.text();
+            console.error("Hugging Face API Error:", errText);
+            throw new Error("Hugging Face API se image nahi ban payi.");
         }
 
-        // ⚡ 5. Fast Base64 Image Delivery (Direct JSON extraction)
-        if (data.predictions && data.predictions.length > 0) {
-            const base64Image = data.predictions[0].bytesBase64Encoded;
-            const mimeType = data.predictions[0].mimeType || "image/jpeg";
-            const mediaUrl = `data:${mimeType};base64,${base64Image}`;
-            
-            res.json({ success: true, mediaUrl: mediaUrl });
-        } else {
-            throw new Error("Imagen API se image result nahi mila.");
-        }
+        // ⚡ Fast Base64 Image Delivery (ArrayBuffer to Base64)
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Image = buffer.toString('base64');
+        
+        // Directly prep the string for your frontend
+        const mediaUrl = `data:image/jpeg;base64,${base64Image}`;
+        
+        res.json({ success: true, mediaUrl: mediaUrl });
 
     } catch (error) {
         console.error("Image Gen Error:", error.message);
@@ -364,6 +354,6 @@ app.post('/api/video-summary', async (req, res) => {
 // ==========================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    // 🗑️ Log updated to remove Pollinations mention
-    console.log(`SG AI Backend chal raha hai port ${PORT} par! (Powered by Groq, Gemini 2.5 Flash & Imagen 3 🚀)`);
+    // 🗑️ Log updated to remove Imagen 3 mention
+    console.log(`SG AI Backend chal raha hai port ${PORT} par! (Powered by Groq, Gemini 2.5 Flash & FLUX.1 🚀)`);
 });
