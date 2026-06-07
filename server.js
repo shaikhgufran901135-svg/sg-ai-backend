@@ -13,7 +13,8 @@ async function askGeminiVision(prompt, base64Image) {
     const apiKey = process.env.GEMINI_API_KEY; 
     if (!apiKey) throw new Error("GEMINI_API_KEY is missing in backend.");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 1. 🚀 CHANGE: URL updated to latest gemini-2.5-flash
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     // Base64 string se MimeType aur Data alag karna (eg: data:image/jpeg;base64,.....)
     const matches = base64Image.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -199,38 +200,66 @@ app.post('/api/chat', async (req, res) => {
 // 🚀 2. TOOLS API (IMAGE, VIDEO, AUDIO, SUMMARY)
 // ==========================================
 
-// ✅ 2.1 - AI Image Generator (Pollinations AI + Gemini Prompt Enhancer)
+// ✅ 2.1 - AI Image Generator (Imagen 3 + Gemini Prompt Enhancer)
 app.post('/api/generate-image', async (req, res) => {
     const { message, image_data } = req.body;
     let finalPrompt = message || "A breathtaking beautiful futuristic artwork";
 
     try {
-        // 🔥 Agar user ne photo dali hai Image Generator tool mein
+        // 🧠 4. Smart Image-to-Image Logic (The Master Prompt)
         if (image_data) {
             console.log(`👁️ Gemini Vision Activated for Image Prompt Enhancement!`);
             
             // Gemini se image ko analyze karke perfect Text-to-Image prompt banwane ka magic
             const geminiInstruction = `Analyze this uploaded image. The user wants to generate a new AI image based on it. User's specific instruction is: '${message || 'make it better'}'. Please write a highly detailed, descriptive image-generation prompt (in English) that can be fed into an AI generator to create this new image. ONLY output the prompt, no conversational text.`;
             
+            // Ye call ab automatically gemini-2.5-flash use karega kyunki helper function update ho gaya hai
             finalPrompt = await askGeminiVision(geminiInstruction, image_data);
             console.log(`✨ Enhanced Prompt by Gemini: ${finalPrompt}`);
         }
 
-        console.log(`🎨 Image Gen Request (Pollinations): ${finalPrompt}`);
+        console.log(`🎨 Image Gen Request (Imagen 3): ${finalPrompt}`);
 
-        const encodedPrompt = encodeURIComponent(finalPrompt);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`;
+        const apiKey = process.env.GEMINI_API_KEY; 
+        if (!apiKey) throw new Error("GEMINI_API_KEY is missing in backend.");
 
-        const response = await fetch(imageUrl);
+        // 🎨 3. Google Nano Banana (Imagen 3) Integration
+        const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
 
-        if (!response.ok) throw new Error("Image API fail ho gayi.");
+        const imagenPayload = {
+            instances: [
+                { prompt: finalPrompt }
+            ],
+            parameters: {
+                sampleCount: 1,
+                aspectRatio: "1:1" // Ise aap apne UI ke hisaab se "16:9", "9:16" bhi kar sakte hain
+            }
+        };
 
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64Image = buffer.toString('base64');
-        const mediaUrl = `data:image/jpeg;base64,${base64Image}`;
+        const response = await fetch(imagenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(imagenPayload)
+        });
 
-        res.json({ success: true, mediaUrl: mediaUrl });
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Imagen API Error:", JSON.stringify(data, null, 2));
+            throw new Error(data.error?.message || "Imagen API fail ho gayi.");
+        }
+
+        // ⚡ 5. Fast Base64 Image Delivery (Direct JSON extraction)
+        if (data.predictions && data.predictions.length > 0) {
+            const base64Image = data.predictions[0].bytesBase64Encoded;
+            const mimeType = data.predictions[0].mimeType || "image/jpeg";
+            const mediaUrl = `data:${mimeType};base64,${base64Image}`;
+            
+            res.json({ success: true, mediaUrl: mediaUrl });
+        } else {
+            throw new Error("Imagen API se image result nahi mila.");
+        }
+
     } catch (error) {
         console.error("Image Gen Error:", error.message);
         res.status(500).json({ success: false, error: "Image generation failed." });
@@ -335,5 +364,6 @@ app.post('/api/video-summary', async (req, res) => {
 // ==========================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`SG AI Backend chal raha hai port ${PORT} par! (Powered by Groq, Gemini & Pollinations AI 🚀)`);
+    // 🗑️ Log updated to remove Pollinations mention
+    console.log(`SG AI Backend chal raha hai port ${PORT} par! (Powered by Groq, Gemini 2.5 Flash & Imagen 3 🚀)`);
 });
