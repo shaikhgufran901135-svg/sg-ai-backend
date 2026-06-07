@@ -200,7 +200,7 @@ app.post('/api/chat', async (req, res) => {
 // 🚀 2. TOOLS API (IMAGE, VIDEO, AUDIO, SUMMARY)
 // ==========================================
 
-// ✅ 2.1 - AI Image Generator (Hugging Face FLUX.1 + Gemini Prompt Enhancer)
+// ✅ 2.1 - AI Image Generator (Hugging Face FLUX.1 + Gemini Prompt Enhancer + Stable Fetch)
 app.post('/api/generate-image', async (req, res) => {
     const { message, image_data } = req.body;
     let finalPrompt = message || "A breathtaking beautiful futuristic artwork";
@@ -218,26 +218,28 @@ app.post('/api/generate-image', async (req, res) => {
 
         console.log(`🎨 Image Gen Request (FLUX.1): ${finalPrompt}`);
 
-        // 🔑 Token Authentication
-        const hfToken = process.env.HF_TOKEN; 
+        // 🔑 Token Authentication - TRIM lagaya hai taaki koi space na aaye
+        const hfToken = (process.env.HF_TOKEN || "").trim(); 
         if (!hfToken) throw new Error("HF_TOKEN is missing in backend.");
 
         // 🚀 Hugging Face FLUX.1 API Integration
         const hfUrl = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell";
 
+        // 🚀 Improved Fetch Request
         const response = await fetch(hfUrl, {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${hfToken}`,
-                'Content-Type': 'application/json' 
+                'Content-Type': 'application/json',
+                'Accept': 'image/jpeg' // Explicitly mang rahe hain image
             },
             body: JSON.stringify({ inputs: finalPrompt })
         });
 
         if (!response.ok) {
             const errText = await response.text();
-            console.error("Hugging Face API Error:", errText);
-            throw new Error("Hugging Face API se image nahi ban payi.");
+            console.error(`❌ Hugging Face API Status Error [${response.status}]:`, errText);
+            throw new Error(`API Status ${response.status}: ${errText}`);
         }
 
         // ⚡ Fast Base64 Image Delivery (ArrayBuffer to Base64)
@@ -248,11 +250,15 @@ app.post('/api/generate-image', async (req, res) => {
         // Directly prep the string for your frontend
         const mediaUrl = `data:image/jpeg;base64,${base64Image}`;
         
+        console.log("✅ Image successfully generated & converted to Base64!");
         res.json({ success: true, mediaUrl: mediaUrl });
 
     } catch (error) {
-        console.error("Image Gen Error:", error.message);
-        res.status(500).json({ success: false, error: "Image generation failed." });
+        // 🔥 Deep Error Logging taaki 'fetch failed' ki asli wajah pata chale
+        console.error("🚨 Image Gen Error Message:", error.message);
+        if (error.cause) console.error("🚨 Asli Wajah (Cause):", error.cause);
+        
+        res.status(500).json({ success: false, error: "Image generation failed. Check server logs." });
     }
 });
 
